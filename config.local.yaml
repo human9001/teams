@@ -1,0 +1,31 @@
+
+app:
+  jwt_secret : "verysecretkey" 
+  jwt_ttl: "45m"
+
+
+mysql:
+  host: "localhost"
+  port: "3306"
+  database: "teams"
+  user: "app"
+  password: "password"
+  root_password: "password"
+
+
+http:
+  host: "localhost"
+  port: "8090"
+  options:
+    httpReadHeaderTimeout: "5s"
+    httpReadTimeout: "15s"
+    httpWriteTimeout: "15s"
+    httpIdleTimeout: "60s"
+    httpShutdownTimeout: "5s"
+
+cache:
+  addr: "localhost:6379"
+  pasword: ""
+  db: 0
+  ttl: "5m"
+

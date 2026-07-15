@@ -1,0 +1,103 @@
+version: "3"
+
+vars:
+  GO_VERSION: "1.26.2"
+  GOLANGCI_LINT_VERSION: "v2.11.2"
+  GCI_VERSION: "v0.14.0"
+  GOFUMPT_VERSION: "v0.9.2"
+  MOCKERY_VERSION: "v3.7.0"
+  GOOSE_VERSION: "v3.27.0"
+
+
+  BIN_DIR: "{{.ROOT_DIR}}/bin"
+  GOLANGCI_LINT: "{{.BIN_DIR}}/golangci-lint"
+  GCI: "{{.BIN_DIR}}/gci"
+  GOFUMPT: "{{.BIN_DIR}}/gofumpt"
+
+  MOCKERY: "{{.BIN_DIR}}/mockery"
+  GOOSE: "{{.BIN_DIR}}/goose"
+
+  MODULES: app
+
+tasks:
+  formatters:install:
+    desc: "Устанавливает gofumpt и gci"
+    cmds:
+      - echo '📦 Устанавливаем gofumpt...'
+      - GOBIN={{.BIN_DIR}} go install mvdan.cc/gofumpt@{{.GOFUMPT_VERSION}}
+      - echo '📦 Устанавливаем gci...'
+      - GOBIN={{.BIN_DIR}} go install github.com/daixiang0/gci@{{.GCI_VERSION}}
+    status:
+      - test -x {{.GOFUMPT}}
+      - test -x {{.GCI}}
+
+  golangci-lint:install:
+    desc: "Устанавливает golangci-lint"
+    cmds:
+      - echo '📦 Устанавливаем golangci-lint...'
+      - GOBIN={{.BIN_DIR}} go install github.com/golangci/golangci-lint/v2/cmd/golangci-lint@{{.GOLANGCI_LINT_VERSION}}
+    status:
+      - test -x {{.GOLANGCI_LINT}}
+
+  format:
+    desc: "Форматирует код (gofumpt + gci)"
+    deps: [formatters:install]
+    cmds:
+      - echo '🧹 Форматируем код через gofumpt...'
+      - find . -type f -name '*.go' ! -path '*/mocks/*' ! -path '*/pkg/proto/*' ! -path '*/pkg/openapi/*' -exec {{.GOFUMPT}} -extra -w {} +
+      - echo '📦 Сортируем импорты через gci...'
+      - find . -type f -name '*.go' ! -path '*/mocks/*' ! -path '*/pkg/proto/*' ! -path '*/pkg/openapi/*' -exec {{.GCI}} write -s standard -s default -s "prefix(github.com/human9001/teams)" {} +
+
+  lint:
+    desc: "Запускает golangci-lint"
+    deps: [golangci-lint:install]
+    cmds:
+      - "{{.GOLANGCI_LINT}} run  --config=.golangci.yml"
+
+  mockery:install:
+    desc: "Устанавливает mockery"
+    cmds:
+      - echo '📦 Устанавливаем mockery...'
+      - GOBIN={{.BIN_DIR}} go install github.com/vektra/mockery/v3@{{.MOCKERY_VERSION}}
+    status:
+      - test -x {{.MOCKERY}}
+
+  mocks:gen:
+    desc: "Генерирует моки интерфейсов"
+    deps: [mockery:install]
+    cmds:
+      - echo '🧪 Генерация моков...'
+      - "{{.MOCKERY}}"
+
+  test:
+    desc: "Запускает unit-тесты с race-детектором"
+    cmds:
+      - for mod in app; do echo "=== $mod ===" && (cd "$mod" && go test -v -race -count=1 ./...); done
+
+  goose:install:
+    desc: "Устанавливает goose"
+    cmds:
+      - echo '📦 Устанавливаем goose...'
+      - GOBIN={{.BIN_DIR}} go install github.com/pressly/goose/v3/cmd/goose@{{.GOOSE_VERSION}}
+    status:
+      - test -x {{.GOOSE}}
+
+
+  setup:
+    desc: "Устанавливает все инструменты"
+    deps: [formatters:install, golangci-lint:install, goose:install, mockery:install]
+
+
+  up:
+    desc: Поднять  сервис и все его зависимости
+    dir: .
+    cmds:
+      - echo "[task] 📦 Поднимаем сервис с зависимостями"
+      - docker compose --env-file app.env up --build --detach
+
+  down:
+    desc: Остановить и удалить сервис и все его зависимости
+    dir: .
+    cmds:
+      - echo "[task] 🛑 Останавливаем сервис с зависимостями"
+      - docker compose --env-file app.env  down --volumes

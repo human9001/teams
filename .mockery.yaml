@@ -1,0 +1,21 @@
+# https://vektra.github.io/mockery/latest/configuration/
+
+template: testify
+formatter: goimports
+dir: "{{.InterfaceDir}}/mocks"
+filename: "mock_{{ .InterfaceName | snakecase }}.go"
+pkgname: "mocks"
+structname: "{{.InterfaceName}}"
+force-file-write: true
+#template-data:
+#  boilerplate-file: ".mockery_boilerplate_text.txt"
+
+packages:
+  github.com/human9001/teams/internal/interfaces/http/api/v1:
+    config:
+      #recursive: true
+      #include-interface-regex: ".*Repository"
+      all : true
+
+
+
