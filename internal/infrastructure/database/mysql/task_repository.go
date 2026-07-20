@@ -4,6 +4,7 @@ import (
 	"context"
 	"database/sql"
 	"errors"
+	"log/slog"
 	"strings"
 	"time"
 
@@ -112,8 +113,11 @@ func (r *TaskRepository) List(ctx context.Context, filter input.ListTasksInput) 
 	offset := (filter.Page - 1) * filter.Limit
 
 	countQuery := "SELECT COUNT(*) FROM tasks WHERE " + whereSQL
+	slog.Info("query", "string", countQuery, "args", args)
 	var total int64
 	if err := r.db.GetContext(ctx, &total, countQuery, args...); err != nil {
+		slog.Error("SQL", "error1", err)
+
 		return []model.Task{}, 0, err
 	}
 
@@ -124,10 +128,15 @@ func (r *TaskRepository) List(ctx context.Context, filter input.ListTasksInput) 
 		ORDER BY id DESC
 		LIMIT ? OFFSET ?
 	`
-	args2 := append([]any{}, args, filter.Limit, offset)
+	args2 := make([]any, 0, len(args))
+	copy(args2, args)
+	args2 = append(args2, filter.Limit, offset)
+
+	slog.Info("query", "string", query, "args2", args2)
 
 	rows, err := r.db.QueryxContext(ctx, query, args2...)
 	if err != nil {
+		slog.Error("SQL", "error2", err)
 		return []model.Task{}, 0, err
 	}
 	defer rows.Close()
@@ -136,6 +145,8 @@ func (r *TaskRepository) List(ctx context.Context, filter input.ListTasksInput) 
 	for rows.Next() {
 		var row taskRow
 		if err := rows.StructScan(&row); err != nil {
+			slog.Error("SQL", "error3", err)
+
 			return []model.Task{}, 0, err
 		}
 		items = append(items, model.NewFromPersistence(
@@ -146,6 +157,8 @@ func (r *TaskRepository) List(ctx context.Context, filter input.ListTasksInput) 
 	}
 
 	if err := rows.Err(); err != nil {
+		slog.Error("SQL", "error4", err)
+
 		return []model.Task{}, 0, err
 	}
 
