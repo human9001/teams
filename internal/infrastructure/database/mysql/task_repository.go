@@ -128,7 +128,7 @@ func (r *TaskRepository) List(ctx context.Context, filter input.ListTasksInput) 
 		ORDER BY id DESC
 		LIMIT ? OFFSET ?
 	`
-	args2 := make([]any, 0, len(args))
+	args2 := make([]any, len(args))
 	copy(args2, args)
 	args2 = append(args2, filter.Limit, offset)
 
