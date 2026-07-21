@@ -28,14 +28,12 @@ func main() {
 
 	config.MustLoad(configPath)
 
-	di, err := container.NewDIContainer()
-	if err != nil {
-		slog.Error("ошибка инициализации DI контейнера", "error", err)
-		os.Exit(1)
-	}
+	di := &container.Container{}
+	di.Build()
 	app := App{diContainer: di}
+
 	app.initHTTPServer()
-	err = app.run()
+	err := app.run()
 	if err != nil {
 		os.Exit(1)
 	}

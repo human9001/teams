@@ -31,14 +31,16 @@ func rateLimit() func(http.Handler) http.Handler {
 	return limiter.Handler
 }
 
-func (a *API) NewRouter(jwtSecret string) *chi.Mux {
+func (a *API) NewRouter(jwtSecret string, middlewares ...func(http.Handler) http.Handler) *chi.Mux {
 	r := chi.NewRouter()
 
 	// r.Use(middleware.Recoverer)
 	r.Use(middleware.Logger)
 	r.Use(rateLimit())
 	r.Use(render.SetContentType(render.ContentTypeJSON))
-
+	for _, v := range middlewares {
+		r.Use(v)
+	}
 	r.Route("/api/v1", func(r chi.Router) {
 		r.Post("/register", a.Register)
 		r.Post("/login", a.Login)

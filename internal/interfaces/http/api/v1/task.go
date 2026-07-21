@@ -9,6 +9,7 @@ import (
 	"strings"
 
 	"github.com/go-chi/chi"
+	"go.opentelemetry.io/otel"
 
 	"github.com/human9001/teams/internal/application/service/task/input"
 	domainErrs "github.com/human9001/teams/internal/domain/errors"
@@ -58,6 +59,11 @@ func (a *API) CreateTask(w http.ResponseWriter, r *http.Request) {
 }
 
 func (a *API) ListTasks(w http.ResponseWriter, r *http.Request) {
+	tracer := otel.Tracer("teams-service")
+	ctx, span := tracer.Start(r.Context(), "health-check")
+	defer span.End()
+
+	slog.InfoContext(ctx, "health endpoint called")
 	q := r.URL.Query()
 
 	teamID, err := strconv.ParseInt(q.Get("team_id"), 10, 64)
@@ -84,11 +90,11 @@ func (a *API) ListTasks(w http.ResponseWriter, r *http.Request) {
 
 	page, err := strconv.ParseInt(q.Get("page"), 10, 64)
 	if err != nil {
-		slog.Error("parse page param", "error", err)
+		slog.ErrorContext(ctx, "parse page param", "error", err)
 	}
 	limit, err := strconv.ParseInt(q.Get("limit"), 10, 64)
 	if err != nil {
-		slog.Error("parse limit param", "error", err)
+		slog.ErrorContext(ctx, "parse limit param", "error", err)
 	}
 
 	if page == 0 {

@@ -25,7 +25,7 @@ func (s *TaskService) ListTasks(ctx context.Context, in input.ListTasksInput) (i
 		return cached, nil
 	}
 	if err != nil {
-		slog.Error("tasks from cache", "error", err)
+		slog.ErrorContext(ctx, "tasks from cache", "error", err)
 	}
 
 	res, total, err := s.repo.List(ctx, in)
@@ -42,7 +42,7 @@ func (s *TaskService) ListTasks(ctx context.Context, in input.ListTasksInput) (i
 
 	err = s.cache.Set(ctx, in.TeamID, st, aId, in.Page, in.Limit, listResult)
 	if err != nil {
-		slog.Error("list task set cache", "error", "err")
+		slog.ErrorContext(ctx, "list task set cache", "error", "err")
 	}
 
 	return listResult, nil
